@@ -13,4 +13,5 @@ async def get_session() -> AsyncSession:
         
 async def init_db():
     async with engine.begin() as conn:
+        # This will only create tables if they do not already exist
         await conn.run_sync(Base.metadata.create_all)
