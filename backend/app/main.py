@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Include routes
-# app.include_router(user.router, prefix="/users", tags=["users"])
+app.include_router(user.router, prefix="/users", tags=["users"])
 # app.include_router(post.router, prefix="/posts", tags=["posts"])
 
 # WebSocket route

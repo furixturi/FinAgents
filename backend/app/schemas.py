@@ -9,6 +9,7 @@ class UserCreate(UserBase):
     pass
 
 class UserUpdate(BaseModel):
+    name: str
     email: str
 
 class User(UserBase):
