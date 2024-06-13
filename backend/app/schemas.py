@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class UserBase(BaseModel):
     name: str
@@ -22,6 +22,7 @@ class User(UserBase):
 class PostBase(BaseModel):
     title: str
     content: str
+    file_url: Optional[str] = None
 
 class PostCreate(PostBase):
     user_id: int
@@ -32,7 +33,6 @@ class PostUpdate(PostBase):
 class Post(PostBase):
     id: int
     user_id: int
-    author: User
 
     class Config:
         orm_mode = True

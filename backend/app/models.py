@@ -11,16 +11,15 @@ class User(Base):
     name = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
 
-    posts = relationship("Post", back_populates="author")
-
 class Post(Base):
     __tablename__ = 'posts'
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     content = Column(String)
+    file_url = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'))
 
-    author = relationship("User", back_populates="posts")
+    author = relationship("User")
 
 class SessionModel(Base):
     __tablename__ = 'sessions'

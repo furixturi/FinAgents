@@ -11,8 +11,6 @@ async def create_user(session: AsyncSession, user_create: UserCreate):
     session.add(user)
     await session.commit()
     await session.refresh(user)
-    # Eagerly load the posts relationship
-    await session.refresh(user, attribute_names=["posts"])
     return user
 
 
@@ -23,9 +21,7 @@ async def get_users(session: AsyncSession):
 
 
 async def get_user_by_id(session, user_id):
-    result = await session.execute(
-        select(User).options(selectinload(User.posts)).where(User.id == user_id)
-    )
+    result = await session.execute(select(User).filter_by(id=user_id))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -33,9 +29,7 @@ async def get_user_by_id(session, user_id):
 
 
 async def update_user(session, user_id, user_update):
-    result = await session.execute(
-        select(User).options(selectinload(User.posts)).where(User.id == user_id)
-    )
+    result = await session.execute(select(User).filter_by(id=user_id))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -47,7 +41,7 @@ async def update_user(session, user_id, user_update):
 
 
 async def delete_user(session, user_id):
-    result = await session.execute(select(User).where(User.id == user_id))
+    result = await session.execute(select(User).filter_by(id=user_id))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")

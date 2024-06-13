@@ -16,11 +16,11 @@ async def create_post(session: AsyncSession, post_create: PostCreate):
         title=post_create.title,
         content=post_create.content,
         user_id=post_create.user_id,
+        file_url=post_create.file_url,
     )
     session.add(post)
     await session.commit()
-    await session.refresh(post, attribute_names=['author'])
-    await session.refresh(post.author, attribute_names=['posts'])
+    await session.refresh(post)
     return post
 
 
@@ -40,6 +40,7 @@ async def update_post(session: AsyncSession, post_id: int, post_update: PostUpda
             raise HTTPException(status_code=404, defail="Post not found")
         post.title = post_update.title
         post.content = post_update.content
+        post.file_url = post_update.file_url
         await session.commit()
         await session.refresh(post)
     except TimeoutError:
