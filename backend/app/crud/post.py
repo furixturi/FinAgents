@@ -38,11 +38,17 @@ async def update_post(session: AsyncSession, post_id: int, post_update: PostUpda
         post = result.scalar_one_or_none()
         if post is None:
             raise HTTPException(status_code=404, detail="Post not found")
-        post.title = post_update.title
-        post.content = post_update.content
-        post.file_url = post_update.file_url
+        
+        if post_update.title is not None:
+            post.title = post_update.title
+        if post_update.content is not None:
+            post.content = post_update.content
+        if post_update.file_url is not None:
+            post.file_url = post_update.file_url
+            
         await session.commit()
         await session.refresh(post)
+        
     except TimeoutError:
         raise HTTPException(
             status_code=409,
