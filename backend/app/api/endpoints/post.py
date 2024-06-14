@@ -41,6 +41,9 @@ async def create_post(
 async def get_posts(session: AsyncSession = Depends(get_session)):
     return await crud_post.get_posts(session)
 
+@router.get("/{post_id}", response_model=Post)
+async def get_post(post_id: int, session: AsyncSession = Depends(get_session)):
+    return await crud_post.get_post(session, post_id)
 
 @router.put("/{post_id}", response_model=Post)
 async def update_post(
@@ -52,7 +55,7 @@ async def update_post(
 ):
     file_location = None
     if file:
-        validate_image(file)
+        validate_file_type(file)
         file_location = os.path.join(UPLOAD_FOLDER, file.filename)
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)

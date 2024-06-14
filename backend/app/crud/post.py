@@ -30,6 +30,12 @@ async def get_posts(session: AsyncSession):
     posts = result.scalars().all()
     return posts
 
+async def get_post(session: AsyncSession, post_id: int):
+    result = await session.execute(select(Post).filter_by(id=post_id))
+    post = result.scalar_one_or_none()
+    if post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return post
 
 async def update_post(session: AsyncSession, post_id: int, post_update: PostUpdate):
     try:
