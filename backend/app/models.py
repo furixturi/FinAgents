@@ -1,7 +1,7 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
 
 Base = declarative_base()
 
@@ -21,6 +21,14 @@ class Post(Base):
 
     author = relationship("User")
 
+class ChatMessage(Base):
+    __tablename__ = 'chat_messages'
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    timestamp = Column(DateTime, server_default=func.now())
+    user = relationship("User")
+    
 class SessionModel(Base):
     __tablename__ = 'sessions'
     id = Column(Integer, primary_key=True)

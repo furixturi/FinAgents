@@ -1,4 +1,4 @@
-## Migration
+## Initial Setup and Migration
 To generate and apply migrations using Alembic, you need to ensure that Alembic is properly set up in your project. Here's a step-by-step guide to set up Alembic and generate the new migration:
 
 ### Step 1: Initialize Alembic
@@ -87,3 +87,22 @@ Configure Alembic: Edit alembic.ini and alembic/env.py to configure Alembic for 
 Generate a New Migration: Use alembic revision --autogenerate -m "Remove posts relationship from User" to create a new migration script.
 Apply the Migration: Run alembic upgrade head to apply the migration to your database.
 With these steps, you should be able to set up Alembic, generate the necessary migration, and apply it to update your database schema.
+
+## Add new model
+### Step 1. Modify Models:
+Ensure your ChatMessage model is added in models.py.
+
+Generate New Migration:
+
+```sh
+alembic revision --autogenerate -m "Add ChatMessage model"
+```
+Review Migration:
+Verify the generated script in `alembic/versions`.
+
+Apply Migration:
+
+```sh
+alembic upgrade head
+```
+After completing these steps, your database schema will be updated to include the ChatMessage model, allowing you to store chat messages in the database.
