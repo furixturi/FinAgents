@@ -26,8 +26,11 @@ class ChatMessage(Base):
     id = Column(Integer, primary_key=True, index=True)
     message = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    recipient_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     timestamp = Column(DateTime, server_default=func.now())
-    user = relationship("User")
+    
+    user = relationship("User", foreign_keys=[user_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])
     
 class SessionModel(Base):
     __tablename__ = 'sessions'

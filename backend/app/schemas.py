@@ -41,10 +41,12 @@ class Post(PostBase):
 
 # ChatMessage
 class ChatMessageBase(BaseModel):
+    user_id: int
     message: str
+    recipient_id: Optional[int] = None
     
 class ChatMessageCreate(ChatMessageBase):
-    user_id: int
+    pass
     
 class ChatMessage(ChatMessageBase):
     id: int
