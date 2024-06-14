@@ -15,7 +15,7 @@ async def create_user(session: AsyncSession, user_create: UserCreate):
 
 
 async def get_users(session: AsyncSession):
-    result = await session.execute(select(User).options(selectinload(User.posts)))
+    result = await session.execute(select(User))
     users = result.scalars().all()
     return users
 
