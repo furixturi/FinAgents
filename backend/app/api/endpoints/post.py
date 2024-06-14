@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
 from app.schemas import Post, PostCreate, PostUpdate
 from app.crud import post as crud_post
+from app.utils import validate_image
 from typing import List, Optional
 import os, shutil
 
@@ -11,14 +12,6 @@ router = APIRouter()
 UPLOAD_FOLDER = "./uploads/"
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-
-
-def validate_image(file: UploadFile):
-    if file.content_type not in ["image/jpeg", "image/png", "image/gif"]:
-        raise HTTPException(
-            status_code=400, detail="Only JPEG, PNG, and GIF images are allowed."
-        )
-
 
 @router.post("/", response_model=Post)
 async def create_post(
