@@ -9,7 +9,7 @@ from app.models import User
 from app.crud import chat as crud_chat
 from typing import List
 
-import datetime
+from datetime import datetime
 
 router = APIRouter()
 
@@ -79,7 +79,7 @@ async def websocket_endpoint(
                 "user_id": chat_message.user_id,
                 "username": username,
                 "message": f"User {username} left the chat",
-                "timestamp": chat_message.timestamp.isoformat(),
+                "timestamp": datetime.utcnow().isoformat(),
             }
         )
 

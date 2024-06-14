@@ -106,3 +106,11 @@ Apply Migration:
 alembic upgrade head
 ```
 After completing these steps, your database schema will be updated to include the ChatMessage model, allowing you to store chat messages in the database.
+
+## Resset
+If you lost a revision version and want to start clean again:
+- delete `alembic` folder
+- delete `alembic.ini`
+- drop `alembic_versions` table from your database
+
+Then you can do the initialization again.
