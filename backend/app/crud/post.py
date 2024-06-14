@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from app.models import Post, User
 from app.schemas import PostCreate, PostUpdate
+from app.utils import sanitize_text
 
 
 async def create_post(session: AsyncSession, post_create: PostCreate):
@@ -13,8 +14,8 @@ async def create_post(session: AsyncSession, post_create: PostCreate):
         raise HTTPException(status_code=404, detail="User not found")
 
     post = Post(
-        title=post_create.title,
-        content=post_create.content,
+        title=sanitize_text(post_create.title),
+        content=sanitize_text(post_create.content),
         user_id=post_create.user_id,
         file_url=post_create.file_url,
     )
@@ -40,9 +41,9 @@ async def update_post(session: AsyncSession, post_id: int, post_update: PostUpda
             raise HTTPException(status_code=404, detail="Post not found")
         
         if post_update.title is not None:
-            post.title = post_update.title
+            post.title = sanitize_text(post_update.title)
         if post_update.content is not None:
-            post.content = post_update.content
+            post.content = sanitize_text(post_update.content)
         if post_update.file_url is not None:
             post.file_url = post_update.file_url
             

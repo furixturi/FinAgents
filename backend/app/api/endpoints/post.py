@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
 from app.schemas import Post, PostCreate, PostUpdate
 from app.crud import post as crud_post
-from app.utils import validate_image
+from app.utils import validate_file_type
 from typing import List, Optional
 import os, shutil
 
@@ -21,7 +21,10 @@ async def create_post(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
 ):
-    validate_image(file)
+    if not validate_file_type(file, ["image/jpeg", "image/png", "image/gif"]):
+        raise HTTPException(
+            status_code=400, detail="Only JPEG, PNG, and GIF images are allowed."
+        )
 
     file_location = os.path.join(UPLOAD_FOLDER, file.filename)
     with open(file_location, "wb") as buffer:
