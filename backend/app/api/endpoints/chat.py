@@ -12,7 +12,6 @@ from typing import List
 from datetime import datetime
 
 router = APIRouter()
-
 manager = ConnectionManager()
 
 
@@ -27,7 +26,6 @@ async def websocket_endpoint(
         await websocket.close(code=1008, reason="Unauthorized")
         return
     username = user.name
-
     await manager.connect(user_id, websocket)
 
     # Broadcast user join
@@ -64,10 +62,14 @@ async def websocket_endpoint(
                 }
 
             if recipient_id:
+                recipient_id = int(recipient_id)
                 # Handle private message
-                if recipient_id in manager.active_connections:
-                    for connection in manager.active_connections[recipient_id]:
-                        await manager.send_personal_message(message, connection)
+                ## send to the sender's connection
+                await manager.send_personal_message(message, websocket)
+                ## send to the recipient's connection                
+                recipient_connections = manager.active_connections.get(recipient_id, [])
+                for connection in recipient_connections:
+                    await manager.send_personal_message(message, connection)
             else:
                 # Handle public message
                 await manager.broadcast(message)
@@ -76,12 +78,13 @@ async def websocket_endpoint(
         manager.disconnect(user_id, websocket)
         await manager.broadcast(
             {
-                "user_id": chat_message.user_id,
+                "user_id": user_id,
                 "username": username,
                 "message": f"User {username} left the chat",
                 "timestamp": datetime.utcnow().isoformat(),
             }
         )
+        
 @router.get("/messages", response_model=List[ChatMessage])
 async def get_all_messages(session: AsyncSession = Depends(get_session), limit: int = 100):
     messages = await crud_chat.get_chat_messages(session, limit=limit)

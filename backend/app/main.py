@@ -8,6 +8,7 @@ from app.connection_manager import ConnectionManager
 from app.db import init_db, engine
 
 
+
 # Initialize/sync DB at startup
 async def lifespan(app: FastAPI):
     # at start up: initialize DB
