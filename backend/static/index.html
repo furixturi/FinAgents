@@ -5,13 +5,19 @@
 </head>
 <body>
     <h1>WebSocket Chat</h1>
+    <h2>Connect to chat</h2>
+    <div>
+        <input type="text" id="userIdInput" placeholder="Your user ID" autocomplete="off"/>
+        <button onclick="connectWebSocket()">Connect</button>
+    </div>
+    <h2>Send a message</h2>
+    <div>
+        <input type="text" id="recipientIdInput" placeholder="Recipient user ID (optional)" autocomplete="off"/>
+        <input type="text" id="messageInput" placeholder="Your message" autocomplete="off"/>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    
     <div id="chat"></div>
-    <input type="text" id="userIdInput" placeholder="Your user ID" autocomplete="off"/>
-    <input type="text" id="usernameInput" placeholder="Your username" autocomplete="off"/>
-    <input type="text" id="recipientIdInput" placeholder="Recipient user ID (optional)" autocomplete="off"/>
-    <input type="text" id="messageInput" placeholder="Your message" autocomplete="off"/>
-    <button onclick="connectWebSocket()">Connect</button>
-    <button onclick="sendMessage()">Send</button>
 
     <script src="script.js"></script>
 </body>

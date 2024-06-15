@@ -7,6 +7,7 @@ function connectWebSocket() {
         ws = new WebSocket(`ws://localhost:8000/chat/${userId}`);
 
         ws.onmessage = function (event) {
+            console.log('Received message: ', event.data)
             const messages = document.getElementById('chat');
             const messageData = JSON.parse(event.data);
             const message = document.createElement('div');
@@ -26,6 +27,7 @@ function sendMessage() {
     if (recipientId) {
         message.recipient_id = recipientId;
     }
+    console.log('Sending message: ', message);
     ws.send(JSON.stringify(message));
     input.value = '';
 }
