@@ -19,10 +19,19 @@ async def create_chat_message(
     return chat_message
 
 
-async def get_chat_messages(session: AsyncSession, user_id: int, limit: int = 100):
+async def get_chat_messages_by_user(session: AsyncSession, user_id: int, limit: int = 100):
     result = await session.execute(
         select(ChatMessage)
         .filter_by(user_id=user_id)
+        .order_by(ChatMessage.timestamp.desc())
+        .limit(limit)
+    )
+    messages = result.scalars().all()
+    return messages
+
+async def get_chat_messages(session: AsyncSession, limit: int = 100):
+    result = await session.execute(
+        select(ChatMessage)
         .order_by(ChatMessage.timestamp.desc())
         .limit(limit)
     )

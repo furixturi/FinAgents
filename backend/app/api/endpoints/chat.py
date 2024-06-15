@@ -82,13 +82,18 @@ async def websocket_endpoint(
                 "timestamp": datetime.utcnow().isoformat(),
             }
         )
+@router.get("/messages", response_model=List[ChatMessage])
+async def get_all_messages(session: AsyncSession = Depends(get_session), limit: int = 100):
+    messages = await crud_chat.get_chat_messages(session, limit=limit)
+    return messages
 
-@router.get("/{user_id}/messages", response_model=List[ChatMessage])
+
+@router.get("/messages/{user_id}", response_model=List[ChatMessage])
 async def get_messages(user_id: int, session: AsyncSession = Depends(get_session), limit: int = 100):
     # verify user_id
     result = await session.execute(select(User).filter_by(id=user_id))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    messages = await crud_chat.get_chat_messages(session, user_id, limit=limit)
+    messages = await crud_chat.get_chat_messages_by_user(session, user_id, limit=limit)
     return messages
