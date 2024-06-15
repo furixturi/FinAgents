@@ -2,3 +2,5 @@ venv
 .env
 *cache*
 tmp_code*
+references
+*/uploads/*
