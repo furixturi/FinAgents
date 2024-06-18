@@ -14,9 +14,9 @@ from datetime import datetime
 router = APIRouter()
 manager = ConnectionManager()
 
-
+# Websocket
 @router.websocket("/{user_id}")
-async def websocket_endpoint(
+async def websocket_chat(
     websocket: WebSocket, user_id: int, session: AsyncSession = Depends(get_session)
 ):
     # verify user_id
@@ -42,17 +42,18 @@ async def websocket_endpoint(
         while True:
             message_data = await websocket.receive_json()
             recipient_id = message_data.get("recipient_id")
+            
+            # Save message to DB
             chat_message_create = ChatMessageCreate(
                 user_id=user_id,
                 message=message_data["message"],
                 recipient_id=recipient_id,
             )
-
-            # Save message to DB
             chat_message = await crud_chat.create_chat_message(
                 session, chat_message_create
             )
             
+            # Send message to clients
             message = {
                     "user_id": chat_message.user_id,
                     "username": username,
@@ -85,6 +86,7 @@ async def websocket_endpoint(
             }
         )
         
+# CRUD
 @router.get("/messages", response_model=List[ChatMessage])
 async def get_all_messages(session: AsyncSession = Depends(get_session), limit: int = 100):
     messages = await crud_chat.get_chat_messages(session, limit=limit)
