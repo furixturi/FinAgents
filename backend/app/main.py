@@ -2,12 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.api.endpoints import user, post, chat
-from app.connection_manager import ConnectionManager
+from app.websocket.connection_manager import ConnectionManager
 
 # from app.websocket.endpoint import websocket_endpoint
 from app.db import init_db, engine
-
-
 
 # Initialize/sync DB at startup
 async def lifespan(app: FastAPI):

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.db import get_session
-from app.connection_manager import ConnectionManager
+from app.websocket.connection_manager import ConnectionManager
 from app.schemas import ChatMessageCreate, ChatMessage
 from app.models import User
 from app.crud import chat as crud_chat
