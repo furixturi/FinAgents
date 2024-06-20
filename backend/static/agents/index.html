@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Agent Chat</title>
+</head>
+<body>
+    <h1>WebSocket Agent Chat</h1>
+    <h2>Start a chat</h2>
+    <div>
+        <input type="text" id="userIdInput" placeholder="Your user ID" autocomplete="off"/>
+        <button onclick="connectWebSocket()">Start Chat</button>
+    </div>
+    <h2>Send a task message</h2>
+    <div>
+        <input type="text" id="messageInput" placeholder="Your message" autocomplete="off"/>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    
+    <div id="chat"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

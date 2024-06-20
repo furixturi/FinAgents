@@ -1,6 +1,92 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Union, Dict
 from datetime import datetime
+from enum import Enum as PydanticEnum
+
+# Agent Group Chat related
+
+class AgentTypeEnum(str, PydanticEnum):
+    ConversableAgent = "ConversableAgent"
+    UserProxyAgent = "UserProxyAgent"
+    AssistantAgent = "AssistantAgent"
+
+class AIAgentBase(BaseModel):
+    name: str
+    user_id: int
+    agent_type: AgentTypeEnum
+    system_message: Optional[str] = "You are a helpful AI Assistant."
+    is_termination_msg: Optional[str] = None
+    max_consecutive_autoreply: Optional[int] = None
+    human_input_mode: Optional[str] = "TERMINATE"
+    function_map: Optional[Dict[str, str]] = None
+    code_execution_config: Optional[Dict] = None
+    llm_config: Optional[Dict] = None
+    default_auto_reply: Optional[str] = ""
+    description: Optional[str] = None
+    chat_messages: Optional[Dict[str, List[Dict]]] = None
+
+class AIAgentCreate(AIAgentBase):
+    pass
+
+class AIAgent(AIAgentBase):
+    id: int
+    created_at: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+class AgentGroupBase(BaseModel):
+    name: str
+    created_by: int
+    manager_id: int
+    creator_user_proxy_id: int
+
+class AgentGroupCreate(AgentGroupBase):
+    pass
+
+class AgentGroup(AgentGroupBase):
+    id: int
+    created_at: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+class AIAgent(AIAgentBase):
+    id: int
+    created_at: Optional[str]
+
+    class Config:
+        orm_mode = True
+        
+class AgentGroupMemberBase(BaseModel):
+    group_id: int
+    agent_id: int
+
+class AgentGroupMemberCreate(AgentGroupMemberBase):
+    pass
+
+class AgentGroupMember(AgentGroupMemberBase):
+    added_at: Optional[str]
+
+    class Config:
+        orm_mode = True
+        
+
+class AgentGroupMessageBase(BaseModel):
+    group_id: int
+    sender_id: int
+    message: str
+
+class AgentGroupMessageCreate(AgentGroupMessageBase):
+    pass
+
+class AgentGroupMessage(AgentGroupMessageBase):
+    id: int
+    sent_at: Optional[str]
+
+    class Config:
+        orm_mode = True
+
 
 # User
 class UserBase(BaseModel):
