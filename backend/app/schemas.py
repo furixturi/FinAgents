@@ -97,7 +97,10 @@ class AgentGroupMessageBase(BaseModel):
     message: str
 
 class AgentGroupMessageCreate(AgentGroupMessageBase):
-    pass
+    sender_id: int
+    
+class AgentGroupMessageUpdate(BaseModel):
+    message: Optional[str]
 
 class AgentGroupMessage(AgentGroupMessageBase):
     id: int
