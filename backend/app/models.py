@@ -37,8 +37,6 @@ class AgentGroup(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     created_by = Column(Integer, ForeignKey('users.id'), nullable=False)
-    manager_id = Column(Integer, ForeignKey('agents.id'), nullable=False)
-    creator_user_proxy_id = Column(Integer, ForeignKey('agents.id'), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
 class AgentGroupMember(Base):

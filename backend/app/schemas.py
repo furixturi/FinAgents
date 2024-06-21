@@ -51,12 +51,10 @@ class AIAgentUpdate(BaseModel):
 
 class AgentGroupBase(BaseModel):
     name: str
-    created_by: int
-    manager_id: int
-    creator_user_proxy_id: int
+    
 
 class AgentGroupCreate(AgentGroupBase):
-    pass
+    created_by: int
 
 class AgentGroup(AgentGroupBase):
     id: int
