@@ -9,7 +9,6 @@ from app.api.endpoints.agents.user import agent as user_ai_agent, agent_group as
 
 # from app.websocket.endpoint import websocket_endpoint
 from app.db import init_db, engine
-from backend.app.api.endpoints import _agents, agent
 
 # Initialize/sync DB at startup
 async def lifespan(app: FastAPI):
