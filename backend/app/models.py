@@ -15,7 +15,7 @@ class AgentType(PyEnum):
     AssistantAgent = "AssistantAgent"
     
 class AIAgent(Base):
-    __tablename__ = 'ai_agents'
+    __tablename__ = 'agents'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
@@ -37,13 +37,13 @@ class AgentGroup(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     created_by = Column(Integer, ForeignKey('users.id'), nullable=False)
-    manager_id = Column(Integer, ForeignKey('ai_agents.id'), nullable=False)
-    creator_user_proxy_id = Column(Integer, ForeignKey('ai_agents.id'), nullable=False)
+    manager_id = Column(Integer, ForeignKey('agents.id'), nullable=False)
+    creator_user_proxy_id = Column(Integer, ForeignKey('agents.id'), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
 class AgentGroupMember(Base):
     __tablename__ = 'agent_group_members'
-    group_id = Column(Integer, ForeignKey('groups.id'), primary_key=True, nullable=False)
+    group_id = Column(Integer, ForeignKey('agent_groups.id'), primary_key=True, nullable=False)
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True, nullable=False)
     added_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
