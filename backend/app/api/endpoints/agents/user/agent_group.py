@@ -7,7 +7,7 @@ from typing import List
 
 router = APIRouter()
 
-# prefix: /ai_agents/users/{user_id}/agent_groups
+# prefix: /agents/users/{user_id}/agent_groups
 
 @router.post("/", response_model=AgentGroup)
 async def create_agent_group(

@@ -7,7 +7,7 @@ from typing import List
 
 router = APIRouter()
 
-# prefix /ai_agents/admin/agent_groups
+# prefix /agents/admin/agent_groups
 
 
 @router.post("/", response_model=AgentGroup)

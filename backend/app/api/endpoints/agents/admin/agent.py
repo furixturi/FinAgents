@@ -7,50 +7,50 @@ from typing import List
 
 router = APIRouter()
 
-# prefix /ai_agents/admin/agents
+# prefix /agents/admin/agents
 
 @router.post("/", response_model=AIAgent)
-async def create_ai_agent(
-    ai_agent_create: AIAgentCreate,
+async def create_agent(
+    agent_create: AIAgentCreate,
     session: AsyncSession = Depends(get_session)
 ):
-    return await crud_agent.admin_create_agent(session, ai_agent_create)
+    return await crud_agent.admin_create_agent(session, agent_create)
 
 @router.get("/", response_model=List[AIAgent])
-async def get_ai_agents(
+async def get_agents(
     skip: int = 0,
     limit: int = 100,
     session: AsyncSession = Depends(get_session)
 ):
-    return await crud_agent.admin_get_ai_agents(session, skip, limit)
+    return await crud_agent.admin_get_agents(session, skip, limit)
 
 @router.get("/{agent_id}", response_model=AIAgent)
-async def get_ai_agent(
+async def get_agent(
     agent_id: int,
     session: AsyncSession = Depends(get_session)
 ):
-    ai_agent = await crud_agent.admin_get_ai_agent(session, agent_id)
-    if not ai_agent:
+    agent = await crud_agent.admin_get_agent(session, agent_id)
+    if not agent:
         raise HTTPException(status_code=404, detail="AI Agent not found")
-    return ai_agent
+    return agent
 
 @router.put("/{agent_id}", response_model=AIAgent)
-async def update_ai_agent(
+async def update_agent(
     agent_id: int,
-    ai_agent_update: AIAgentUpdate,
+    agent_update: AIAgentUpdate,
     session: AsyncSession = Depends(get_session)
 ):
-    ai_agent = await crud_agent.admin_update_ai_agent(session, agent_id, ai_agent_update)
-    if not ai_agent:
+    agent = await crud_agent.admin_update_agent(session, agent_id, agent_update)
+    if not agent:
         raise HTTPException(status_code=404, detail="AI Agent not found")
-    return ai_agent
+    return agent
 
 @router.delete("/{agent_id}", response_model=AIAgent)
-async def delete_ai_agent(
+async def delete_agent(
     agent_id: int,
     session: AsyncSession = Depends(get_session)
 ):
-    ai_agent = await crud_agent.admin_delete_ai_agent(session, agent_id)
-    if not ai_agent:
+    agent = await crud_agent.admin_delete_agent(session, agent_id)
+    if not agent:
         raise HTTPException(status_code=404, detail="AI Agent not found")
-    return ai_agent
+    return agent
