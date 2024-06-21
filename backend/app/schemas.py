@@ -35,6 +35,20 @@ class AIAgent(AIAgentBase):
     class Config:
         orm_mode = True
 
+class AIAgentUpdate(BaseModel):
+    name: Optional[str]
+    agent_type: Optional[AgentTypeEnum]
+    system_message: Optional[str]
+    is_termination_msg: Optional[str]
+    max_consecutive_autoreply: Optional[int]
+    human_input_mode: Optional[str]
+    function_map: Optional[Dict[str, str]]
+    code_execution_config: Optional[Dict[str, str]]
+    llm_config: Optional[Dict[str, str]]
+    default_auto_reply: Optional[str]
+    description: Optional[str]
+    chat_messages: Optional[Dict[str, List[Dict[str, Union[str, int]]]]]
+
 class AgentGroupBase(BaseModel):
     name: str
     created_by: int
@@ -57,6 +71,11 @@ class AIAgent(AIAgentBase):
 
     class Config:
         orm_mode = True
+
+class AgentGroupUpdate(BaseModel):
+    name: Optional[str]
+    manager_id: Optional[int]
+    creator_user_proxy_id: Optional[int]
         
 class AgentGroupMemberBase(BaseModel):
     group_id: int
