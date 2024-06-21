@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
-from app.schemas import AgentGroupMessage, AgentGroupMessageCreate
+from app.schemas import AgentGroupMessage, AgentGroupMessageCreate, AgentGroupMessageUpdate
 from app.crud import agent_group_message as crud_agent_group_message
 from typing import List
 
@@ -35,6 +35,18 @@ async def get_agent_group_message(
         raise HTTPException(status_code=404, detail="Agent Group Message not found")
     return agent_group_message
 
+@router.put("/{message_id}", response_model=AgentGroupMessage)
+async def update_agent_group_message(
+    group_id: int,
+    message_id: int,
+    agent_group_message_update: AgentGroupMessageUpdate,
+    session: AsyncSession = Depends(get_session)
+):
+    agent_group_message = await crud_agent_group_message.admin_update_agent_group_message(session, message_id, agent_group_message_update)
+    if not agent_group_message or agent_group_message.group_id != group_id:
+        raise HTTPException(status_code=404, detail="Agent Group Message not found")
+    return agent_group_message
+
 @router.delete("/{message_id}", response_model=AgentGroupMessage)
 async def delete_agent_group_message(
     message_id: int,
@@ -44,3 +56,4 @@ async def delete_agent_group_message(
     if not agent_group_message:
         raise HTTPException(status_code=404, detail="Agent Group Message not found")
     return agent_group_message
+

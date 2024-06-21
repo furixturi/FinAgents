@@ -62,7 +62,7 @@ async def user_delete_agent_group_message(db: AsyncSession, group_id: int, messa
         await db.commit()
     return agent_group_message
 
-async def user_update_agent_group_message(db: AsyncSession, user_id: int, group_id: int, message_id: int, agent_group_message_update: AgentGroupMessageUpdate) -> AgentGroupMessage:
+async def user_update_agent_group_message(db: AsyncSession, group_id: int, message_id: int, agent_group_message_update: AgentGroupMessageUpdate) -> AgentGroupMessage:
     result = await db.execute(select(AgentGroupMessage).where(AgentGroupMessage.id == message_id, AgentGroupMessage.group_id == group_id))
     agent_group_message = result.scalars().first()
     if agent_group_message:
