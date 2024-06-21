@@ -5,7 +5,7 @@ from app.models import AIAgent
 from app.schemas import AIAgentCreate, AIAgentUpdate
 
 # Admin CRUD functions
-async def admin_create_ai_agent(db: AsyncSession, ai_agent_create: AIAgentCreate) -> AIAgent:
+async def admin_create_agent(db: AsyncSession, ai_agent_create: AIAgentCreate) -> AIAgent:
     ai_agent = AIAgent(**ai_agent_create.dict())
     db.add(ai_agent)
     await db.commit()
@@ -39,7 +39,7 @@ async def admin_delete_ai_agent(db: AsyncSession, agent_id: int) -> AIAgent:
     return ai_agent
 
 # User CRUD functions
-async def user_create_ai_agent(db: AsyncSession, ai_agent_create: AIAgentCreate) -> AIAgent:
+async def user_create_agent(db: AsyncSession, ai_agent_create: AIAgentCreate) -> AIAgent:
     ai_agent = AIAgent(**ai_agent_create.dict())
     db.add(ai_agent)
     await db.commit()

@@ -16,7 +16,7 @@ async def create_ai_agent(
     session: AsyncSession = Depends(get_session)
 ):
     ai_agent_create.user_id = user_id
-    return await crud_agent.user_create_ai_agent(session, ai_agent_create)
+    return await crud_agent.user_create_agent(session, ai_agent_create)
 
 @router.get("/", response_model=List[AIAgent])
 async def get_ai_agents(
