@@ -5,6 +5,7 @@ from app.schemas import User, UserCreate, UserUpdate
 from app.crud import user as crud_user
 from typing import List
 
+# prefix /users
 router = APIRouter()
 
 @router.post("/", response_model=User)
