@@ -6,7 +6,7 @@ from app.schemas import AgentGroupCreate, AgentGroupUpdate
 
 # Admin CRUD functions
 async def admin_create_agent_group(db: AsyncSession, agent_group_create: AgentGroupCreate) -> AgentGroup:
-    agent_group = AgentGroup(**agent_group_create.dict())
+    agent_group = AgentGroup(**agent_group_create.model_dump())
     db.add(agent_group)
     await db.commit()
     await db.refresh(agent_group)
@@ -24,7 +24,7 @@ async def admin_update_agent_group(db: AsyncSession, group_id: int, agent_group_
     result = await db.execute(select(AgentGroup).where(AgentGroup.id == group_id))
     agent_group = result.scalars().first()
     if agent_group:
-        for key, value in agent_group_update.dict(exclude_unset=True).items():
+        for key, value in agent_group_update.model_dump(exclude_unset=True).items():
             setattr(agent_group, key, value)
         await db.commit()
         await db.refresh(agent_group)
@@ -40,7 +40,7 @@ async def admin_delete_agent_group(db: AsyncSession, group_id: int) -> AgentGrou
 
 # User CRUD functions
 async def user_create_agent_group(db: AsyncSession, agent_group_create: AgentGroupCreate) -> AgentGroup:
-    agent_group = AgentGroup(**agent_group_create.dict())
+    agent_group = AgentGroup(**agent_group_create.model_dump())
     db.add(agent_group)
     await db.commit()
     await db.refresh(agent_group)
@@ -58,7 +58,7 @@ async def user_update_agent_group(db: AsyncSession, user_id: int, group_id: int,
     result = await db.execute(select(AgentGroup).where(AgentGroup.id == group_id, AgentGroup.created_by == user_id))
     agent_group = result.scalars().first()
     if agent_group:
-        for key, value in agent_group_update.dict(exclude_unset=True).items():
+        for key, value in agent_group_update.model_dump(exclude_unset=True).items():
             setattr(agent_group, key, value)
         await db.commit()
         await db.refresh(agent_group)
