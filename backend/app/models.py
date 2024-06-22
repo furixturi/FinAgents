@@ -118,8 +118,8 @@ class AgentGroupMessage(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     group_id = Column(Integer, ForeignKey("agent_groups.id"), nullable=False)
     sender_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
-    message = Column(Text, nullable=False)
-    sent_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+    message = Column(JSON, nullable=False)
+    sent_at = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
 
 
 # User

@@ -56,7 +56,7 @@ class AIAgentUpdate(BaseModel):
 
 
 class AgentGroupBase(BaseModel):
-    name: str
+    name: Optional[str] = "Awesome Agent Group"
     max_round: Optional[int] = 10
     admin_name: Optional[str] = "Admin"
     func_call_filter: Optional[bool] = True
@@ -163,15 +163,16 @@ class AgentGroupMember(AgentGroupMemberBase):
     class Config:
         orm_mode = True
 
+class MessageContent(BaseModel):
+    content: str
+    role: Literal["user", "system", "assistant"]
+    name: Optional[str]
 
-class AgentGroupMessageBase(BaseModel):
+class AgentGroupMessageCreate(BaseModel):
     group_id: int
     sender_id: int
-    message: str
-
-
-class AgentGroupMessageCreate(AgentGroupMessageBase):
-    pass
+    message: MessageContent
+    sent_at: datetime
 
 
 class AgentGroupMessageUpdate(BaseModel):
@@ -179,9 +180,12 @@ class AgentGroupMessageUpdate(BaseModel):
     message: Optional[str]
 
 
-class AgentGroupMessage(AgentGroupMessageBase):
+class AgentGroupMessage(BaseModel):
     id: int
-    sent_at: Optional[str]
+    group_id: int
+    sender_id: int
+    message: MessageContent
+    sent_at: datetime
 
     class Config:
         orm_mode = True
