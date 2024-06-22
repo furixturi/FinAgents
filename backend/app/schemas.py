@@ -3,9 +3,9 @@ from typing import List, Optional, Union, Dict, Literal
 from datetime import datetime
 from enum import Enum as PydanticEnum
 
-# Agent Group Chat related
+############# Agent Group Chat start #############
 
-
+# AIAgent
 class AgentTypeEnum(str, PydanticEnum):
     ConversableAgent = "ConversableAgent"
     UserProxyAgent = "UserProxyAgent"
@@ -31,15 +31,6 @@ class AIAgentBase(BaseModel):
 class AIAgentCreate(AIAgentBase):
     pass
 
-
-class AIAgent(AIAgentBase):
-    id: int
-    created_at: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
 class AIAgentUpdate(BaseModel):
     name: Optional[str]
     agent_type: Optional[AgentTypeEnum]
@@ -54,7 +45,14 @@ class AIAgentUpdate(BaseModel):
     description: Optional[str]
     chat_messages: Optional[Dict[str, List[Dict[str, Union[str, int]]]]]
 
+class AIAgent(AIAgentBase):
+    id: int
+    created_at: Optional[str]
 
+    class Config:
+        orm_mode = True
+
+# AgentGroup
 class AgentGroupBase(BaseModel):
     name: Optional[str] = "Awesome Agent Group"
     max_round: Optional[int] = 10
@@ -133,21 +131,7 @@ class AgentGroup(AgentGroupBase):
     class Config:
         orm_mode = True
 
-
-class AIAgent(AIAgentBase):
-    id: int
-    created_at: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class AgentGroupUpdate(BaseModel):
-    name: Optional[str]
-    manager_id: Optional[int]
-    creator_user_proxy_id: Optional[int]
-
-
+# AgentGroupMember
 class AgentGroupMemberBase(BaseModel):
     group_id: int
     agent_id: int
@@ -163,6 +147,7 @@ class AgentGroupMember(AgentGroupMemberBase):
     class Config:
         orm_mode = True
 
+# AgentGroupMessage
 class MessageContent(BaseModel):
     content: str
     role: Literal["user", "system", "assistant"]
@@ -190,6 +175,7 @@ class AgentGroupMessage(BaseModel):
     class Config:
         orm_mode = True
 
+######################## Agent Group Chat end ##########################
 
 # User
 class UserBase(BaseModel):
