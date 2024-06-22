@@ -44,7 +44,19 @@ class AIAgent(Base):
     description = Column(Text, nullable=True)
     chat_messages = Column(JSON, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+    
+    def to_dict(self):
+        def recursive_to_dict(obj):
+            if isinstance(obj, Base):
+                return {column.name: recursive_to_dict(getattr(obj, column.name)) for column in obj.__table__.columns}
+            elif isinstance(obj, list):
+                return [recursive_to_dict(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {key: recursive_to_dict(value) for key, value in obj.items()}
+            else:
+                return obj
 
+        return recursive_to_dict(self)
 
 class AgentGroup(Base):
     __tablename__ = "agent_groups"
