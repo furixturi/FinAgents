@@ -1,8 +1,12 @@
 from dotenv import load_dotenv
-import os, uuid, asyncio
 
 load_dotenv()
 
+import os
+from typing import List, Optional, Dict, Any, Tuple, Union
+
+from fastapi import WebSocket
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from autogen.agentchat import (
     ConversableAgent,
@@ -12,6 +16,7 @@ from autogen.agentchat import (
     GroupChatManager,
     Agent,
 )
+from autogen.agentchat.contrib.gpt_assistant_agent import GPTAssistantAgent
 
 from app.crud.agent import user_get_agent, user_create_agent
 from app.crud.agent_group import user_get_agent_group, user_create_agent_group
@@ -29,12 +34,10 @@ from app.schemas import (
     AgentGroupCreate,
     AgentGroupMemberCreate,
     AgentGroupMessageCreate,
+    MessageContent,
 )
 from app.models import AIAgent, AgentGroup, AgentGroupMember, AgentGroupMessage
 
-from fastapi import WebSocket
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
 
 default_llm_configs = {
     "gpt_4o": {
@@ -60,91 +63,9 @@ default_llm_configs = {
     },
 }
 
-config_gpt_4o = {
-    "model": os.environ.get("GPT_4O_MODEL"),
-    "api_type": "azure",
-    "api_key": os.environ.get("GPT_4O_API_KEY"),
-    "base_url": os.environ.get("GPT_4O_AZURE_ENDPOINT"),
-    "api_version": os.environ.get("GPT_4O_API_VERSION"),
-}
-
-
-config_gpt_4_turbo = {
-    "model": os.environ.get("GPT_4_TURBO_MODEL"),
-    "api_type": "azure",
-    "api_key": os.environ.get("GPT_4_TURBO_API_KEY"),
-    "base_url": os.environ.get("GPT_4_TURBO_AZURE_ENDPOINT"),
-    "api_version": os.environ.get("GPT_4_TURBO_API_VERSION"),
-}
-
-
-config_gpt_35_turbo = {
-    "model": os.environ.get("GPT_35_TURBO_MODEL"),
-    "api_type": "azure",
-    "api_key": os.environ.get("GPT_35_TURBO_API_KEY"),
-    "base_url": os.environ.get("GPT_35_TURBO_AZURE_ENDPOINT"),
-    "api_version": os.environ.get("GPT_35_TURBO_API_VERSION"),
-}
-
-
-def create_default_agents() -> List[ConversableAgent]:
-    user_proxy = UserProxyAgent(
-        name="Human Admin",
-        system_message="A human admin. Give the task, and send instructions to writer to refine the blog post.",
-        code_execution_config=False,
-    )
-
-    planner = AssistantAgent(
-        name="Planner",
-        system_message="""Planner. Given a task, please determine what information is needed to complete the task.
-        Please note that the information will all be retrieved using Python code. Please only suggest information that can be retrieved using Python code.
-        """,
-        llm_config={"config_list": [config_gpt_4_turbo]},
-    )
-
-    engineer = AssistantAgent(
-        name="Engineer",
-        llm_config={"config_list": [config_gpt_4_turbo], "cache_seed": None},
-        system_message="""Engineer. You write python/bash to retrieve relevant information. Wrap the code in a code block that specifies the script type. The user can't modify your code. So do not suggest incomplete code which requires others to modify. Don't use a code block if it's not intended to be executed by the executor. 
-        Always provide bash code block to install dependency first.
-        Don't include multiple code blocks in one response. Do not ask others to copy and paste the result. Check the execution result returned by the executor.
-        If the result indicates there is an error, fix the error and output the code again. Suggest the full code instead of partial code or code changes. If the error can't be fixed or if the task is not solved even after the code is executed successfully, analyze the problem, revisit your assumption, collect additional info you need, and think of a different approach to try.
-        Write code to print the output so that the others can access the result. When you use code to plot data, save the graph to an image file in the work dir and print out the file path. 
-        """,
-    )
-
-    writer = (
-        AssistantAgent(
-            name="Writer",
-            llm_config={"config_list": [config_gpt_4_turbo], "cache_seed": None},
-            system_message="""Writer. Please write finance report and documentation in markdown format (with relevant titles) and put the content in pseudo ```md``` code block. You will write it for a task based on previous chat history. Don't write any code. You can get code from Engineer and put them in  markdown style code blocks in your report if necessary.""",
-        ),
-    )
-
-    # os.makedirs("paper", exist_ok=True)
-    # code_executor = UserProxyAgent(
-    #     name = "Executor",
-    #     system_message = "Executor. Execute the code written by the engineer and report the result.",
-    #     description = "Executor should always be called after the engineer has written the code to be executed.",
-    #     human_input_mode = "ALWAYS",
-    #     code_execution_config = {
-    #         "last_n_messages": 3,
-    #         "executor": LocalCommandLineCodeExecutor(work_dir="paper"),
-    #     },
-    # )
-
-    return [
-        user_proxy,
-        planner,
-        engineer,
-        writer,
-        # code_executor
-    ]
-
-
 default_agent_configs = [
     {
-        "name": "Human Admin",
+        "name": "Admin",
         "system_message": "A human admin. Give the task, and send instructions to writer to refine the blog post.",
         "code_execution_config": False,
         "agent_type": "UserProxyAgent",
@@ -177,6 +98,68 @@ default_agent_configs = [
 ]
 
 
+## For reference only
+def create_default_agents() -> List[ConversableAgent]:
+    user_proxy = UserProxyAgent(
+        name="Human Admin",
+        system_message="A human admin. Give the task, and send instructions to writer to refine the blog post.",
+        code_execution_config=False,
+    )
+
+    planner = AssistantAgent(
+        name="Planner",
+        system_message="""Planner. Given a task, please determine what information is needed to complete the task.
+        Please note that the information will all be retrieved using Python code. Please only suggest information that can be retrieved using Python code.
+        """,
+        llm_config={"config_list": [default_agent_configs["config_gpt_4_turbo"]]},
+    )
+
+    engineer = AssistantAgent(
+        name="Engineer",
+        llm_config={
+            "config_list": [default_agent_configs["config_gpt_4_turbo"]],
+            "cache_seed": None,
+        },
+        system_message="""Engineer. You write python/bash to retrieve relevant information. Wrap the code in a code block that specifies the script type. The user can't modify your code. So do not suggest incomplete code which requires others to modify. Don't use a code block if it's not intended to be executed by the executor. 
+        Always provide bash code block to install dependency first.
+        Don't include multiple code blocks in one response. Do not ask others to copy and paste the result. Check the execution result returned by the executor.
+        If the result indicates there is an error, fix the error and output the code again. Suggest the full code instead of partial code or code changes. If the error can't be fixed or if the task is not solved even after the code is executed successfully, analyze the problem, revisit your assumption, collect additional info you need, and think of a different approach to try.
+        Write code to print the output so that the others can access the result. When you use code to plot data, save the graph to an image file in the work dir and print out the file path. 
+        """,
+    )
+
+    writer = (
+        AssistantAgent(
+            name="Writer",
+            llm_config={
+                "config_list": [default_agent_configs["config_gpt_4_turbo"]],
+                "cache_seed": None,
+            },
+            system_message="""Writer. Please write finance report and documentation in markdown format (with relevant titles) and put the content in pseudo ```md``` code block. You will write it for a task based on previous chat history. Don't write any code. You can get code from Engineer and put them in  markdown style code blocks in your report if necessary.""",
+        ),
+    )
+
+    # os.makedirs("paper", exist_ok=True)
+    # code_executor = UserProxyAgent(
+    #     name = "Executor",
+    #     system_message = "Executor. Execute the code written by the engineer and report the result.",
+    #     description = "Executor should always be called after the engineer has written the code to be executed.",
+    #     human_input_mode = "ALWAYS",
+    #     code_execution_config = {
+    #         "last_n_messages": 3,
+    #         "executor": LocalCommandLineCodeExecutor(work_dir="paper"),
+    #     },
+    # )
+
+    return [
+        user_proxy,
+        planner,
+        engineer,
+        writer,
+        # code_executor
+    ]
+
+
 class AgentGroupChat:
     def __init__(
         self,
@@ -195,6 +178,7 @@ class AgentGroupChat:
         self.group_manager_llm = group_manager_llm
         self.llm_configs = llm_configs
 
+        self.agent_name_to_id: Dict[str, int] = {}
         self.group_data: AgentGroup = None
         self.agents_data: List[AIAgent] = []
         self.messages_data: List[AgentGroupMessage] = []
@@ -276,10 +260,17 @@ class AgentGroupChat:
 
     # Use the data to create autogen agents, messages, groupchat, groupchat_manager
     def create_autogen_agent(self, agent_data: AIAgent):
+        agent_name = agent_data.name
+        if agent_name in self.agent_name_to_id:
+            raise ValueError(f"Agent name {agent_name} is not unique")
+        agent_id = agent_data.id
+        self.agent_name_to_id[agent_name] = agent_id
+
         agent_constructors = {
             "ConversableAgent": ConversableAgent,
             "UserProxyAgent": UserProxyAgent,
             "AssistantAgent": AssistantAgent,
+            "GPTAssistantAgent": GPTAssistantAgent,
         }
         agent_config = agent_data.to_dict()
 
@@ -287,9 +278,9 @@ class AgentGroupChat:
         agent_type = agent_config.pop("agent_type")
         if agent_type not in agent_constructors:
             raise ValueError(f"Invalid agent type: {agent_type}")
-        
+
         # 2. Craft agent_config that is compatible with AutoGen
-        
+
         ## llm_config["config_list"] example:
         # config_list = [
         #     {
@@ -324,10 +315,69 @@ class AgentGroupChat:
                     {"model": model_name, **self.llm_configs.get(model_name)}
                     for model_name in llm_config["config_list"]
                 ]
-        
-        # 3. Create the agent and return it
-        return agent_constructors[agent_type](**agent_config)
 
+        # 3. Create the agent and return it
+        if agent_type == "UserProxyAgent" and self.user_proxy:
+            raise ValueError("Only one UserProxyAgent is allowed")
+
+        autogen_agent: ConversableAgent = agent_constructors[agent_type](**agent_config)
+        if agent_type == "UserProxyAgent":
+            self.user_proxy: UserProxyAgent = autogen_agent
+            self.user_proxy_data = agent_data
+
+        # 4. register a callback hook so that the agent save every message to db before sending it
+        autogen_agent.register_hook(
+            "process_message_before_send", self.agent_save_message_before_send
+        )
+
+        return autogen_agent
+
+    async def agent_save_message_before_send(
+        self, sender: Agent, message: Union[Dict, str], recipient: Agent, silent=False
+    ) -> Union[Dict, str]:
+        """
+        This is a hook function to be registered on an AutoGen ConverableAgent with register_hook() function.
+        It will be appended to the agent's hooklist["process_message_before_send"].
+        It must return the message to be processed further and to be sent by the sender agent.
+
+        message (dict or str): message to be sent.
+            The message could contain the following fields:
+            - content (str or List): Required, the content of the message. (Can be None)
+            - function_call (str): the name of the function to be called.
+            - name (str): the name of the function to be called.
+            - role (str): the role of the message, any role that is not "function"
+                will be modified to "assistant".
+            - context (dict): the context of the message, which will be passed to
+                [OpenAIWrapper.create](../oai/client#create).
+                For example, one agent can send a message A as:
+        ```python
+        {
+            "content": lambda context: context["use_tool_msg"],
+            "context": {
+                "use_tool_msg": "Use tool X if they are relevant."
+            }
+        }
+        """
+        if sender.name not in self.agent_name_to_id:
+            raise ValueError(f"Agent {sender.name} is not in the agent chat group")
+
+        message_dict = message
+        if isinstance(message_dict, str):
+            message_dict = {
+                "content": message,
+                "role": "user" if sender.name == self.user_proxy.name else "assistant",
+                "name": sender.name,
+            }
+
+        message_create = AgentGroupMessageCreate(
+            group_id=self.group_data.id,
+            sender_id=self.agent_name_to_id[sender.name],
+            message=MessageContent(**message_dict),
+        )
+
+        _ = await user_create_agent_group_message(self.db, message_create)
+
+        return message
 
     def create_autogen_message(self, message_data: AgentGroupMessage):
         # Example message_data.message
@@ -358,48 +408,13 @@ class AgentGroupChat:
         )
         return agent_group_chat_manager, agent_group_chat
 
-    ####################### TBU ############################
-    ## websocket handler will call this
-    ## TODO
-    ### - each agent's each message will be saved to db
-    ### - each agent's each message will be sent to the client websocket
-    async def start(self, message):
-        await self.user_proxy.a_initiate_chat(
-            self.group_chat_manager, clear_history=True, message=message
-        )
+    def start_chat(self, user_message: str):
+        autogen_message = {
+            "content": user_message,
+            "role": "user",
+            "name": self.user_proxy.name,
+        }
 
-        self.client_sent_queue = asyncio.Queue()
-        self.client_received_queue = asyncio.Queue()
-
-        self.user_proxy = UserProxyAgentWeb(
-            name="User",
-            human_input_mode="ALWAYS",
-            system_message="User. You are the user. You can provide input to the agents. Giving them tasks and provide feedbacks.",
-            max_consecutive_auto_reply=5,
-            is_terminal_msg=lambda x: x.get("content", "")
-            and x.get("content", "").rstrip().endswith("TERMINATE"),
-            code_execution_config=False,
-        )
-        self.user_proxy.set_queues(self.client_sent_queue, self.client_received_queue)
-
-        self.agents = [self.user_proxy] + (
-            agents if agents else create_default_agents()
-        )
-
-        self.groupchat = GroupChat(
-            agents=self.agents,
-            messages=messages,
-            max_round=max_round,
-            speaker_selection_method="auto",
-        )
-
-        self.groupchat_manager = GroupChatManager(
-            groupchat=self.groupchat,
-            llm_config={"config_list": [config_gpt_4_turbo], "cache_seed": None},
-            human_input_mode="ALWAYS",
-        )
-
-    async def start(self, message):
-        await self.user_proxy.a_initiate_chat(
-            self.groupchat_manager, clear_history=True, message=message
+        self.user_proxy.a_initiate_chat(
+            self.autogen_agent_group_chat_manager, message=autogen_message
         )
