@@ -185,12 +185,14 @@ class AgentGroupChat:
         websocket: WebSocket = None,
         group_id: int = None,
         group_config: dict = {},
+        group_manager_llm: str = "gpt_4_turbo",
         agent_configs: List[dict] = default_agent_configs,
         llm_configs: dict = default_llm_configs,
     ):
         self.db = db
         self.user_id = user_id
         self.websocket = websocket
+        self.group_manager_llm = group_manager_llm
         self.llm_configs = llm_configs
 
         self.group_data: AgentGroup = None
@@ -201,6 +203,8 @@ class AgentGroupChat:
             if self.group_data:
                 self.agents_data = self.retrieve_group_agents_data(group_id)
                 self.messages_data = self.retrieve_group_messages_data(group_id)
+            else:
+                raise ValueError(f"Agent group with id {group_id} not found")
         else:
             self.group_data = self.create_and_store_agent_group_data(group_config)
             self.agents_data = self.create_and_store_group_agents_data(
@@ -246,7 +250,7 @@ class AgentGroupChat:
             agents_data.append(agent_data)
         return agents_data
 
-    # CRUD to retireve from or save new data of agent, agent_group, agent_group_messages to db
+    # CRUD to retireve data of agent, agent_group, agent_group_messages from db with given group_id
     async def retrieve_agent_group_data(self, group_id: int):
         group_data = await user_get_agent_group(self.db, self.user_id, group_id)
         if group_data:
@@ -270,6 +274,7 @@ class AgentGroupChat:
         )
         return messages_data
 
+    # Use the data to create autogen agents, messages, groupchat, groupchat_manager
     def create_autogen_agent(self, agent_data: AIAgent):
         agent_constructors = {
             "ConversableAgent": ConversableAgent,
@@ -278,7 +283,14 @@ class AgentGroupChat:
         }
         agent_config = agent_data.to_dict()
 
-        ## llm_config["config_list"] example
+        # 1. Check if the agent type is valid
+        agent_type = agent_config.pop("agent_type")
+        if agent_type not in agent_constructors:
+            raise ValueError(f"Invalid agent type: {agent_type}")
+        
+        # 2. Craft agent_config that is compatible with AutoGen
+        
+        ## llm_config["config_list"] example:
         # config_list = [
         #     {
         #         "model": "gpt-4",
@@ -298,22 +310,24 @@ class AgentGroupChat:
         #         "base_url": "http://127.0.0.1:8080",
         #     },
         # ]
-        
+
         if "llm_config" in agent_config:
+            if not self.llm_configs:
+                raise ValueError(
+                    "Cannot create AutoGen agent with LLM since no LLM configs are provided"
+                )
             llm_config = agent_config["llm_config"]
             if isinstance(llm_config, str):
                 agent_config["llm_config"] = self.llm_configs.get(llm_config)
             elif isinstance(llm_config.get("config_list"), list):
                 agent_config["llm_config"]["config_list"] = [
-                    self.llm_configs.get(model_name)
+                    {"model": model_name, **self.llm_configs.get(model_name)}
                     for model_name in llm_config["config_list"]
                 ]
+        
+        # 3. Create the agent and return it
+        return agent_constructors[agent_type](**agent_config)
 
-        agent_type = agent_config.pop("agent_type")
-        if agent_type in agent_constructors:
-            return agent_constructors[agent_type](**agent_config)
-        else:
-            raise ValueError(f"Invalid agent type: {agent_type}")
 
     def create_autogen_message(self, message_data: AgentGroupMessage):
         # Example message_data.message
@@ -328,7 +342,7 @@ class AgentGroupChat:
     def initialize_agent_group_chat(self):
         agent_group_chat = GroupChat(
             name=self.group_data.name,
-            agents=self.autogen_agents,  # [user_proxy, planner, engineer, writer, code_executor],
+            agents=self.autogen_agents,
             messages=self.autogen_messages,
             max_round=self.group_data.max_round,
             speaker_selection_method=self.group_data.speaker_selection_method,
@@ -337,7 +351,10 @@ class AgentGroupChat:
         agent_group_chat_manager = GroupChatManager(
             groupchat=agent_group_chat,
             human_input_mode="TERMINATE",
-            llm_config={"config_list": [self.llm_configs["gpt_4_turbo"]], "cache_seed": None},
+            llm_config={
+                "config_list": [self.llm_configs[self.group_manager_llm]],
+                "cache_seed": None,
+            },
         )
         return agent_group_chat_manager, agent_group_chat
 
