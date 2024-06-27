@@ -50,7 +50,7 @@ class AIAgent(AIAgentBase):
     created_at: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # AgentGroup
 class AgentGroupBase(BaseModel):
@@ -124,12 +124,15 @@ class AgentGroupUpdate(BaseModel):
 class AgentGroup(AgentGroupBase):
     id: int
     created_by: int
-    created_at: str
+    created_at: datetime
     updated_by: Optional[int]
-    updated_at: Optional[str]
+    updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda dt: dt.isoformat(),
+        }
 
 # AgentGroupMember
 class AgentGroupMemberBase(BaseModel):
@@ -145,7 +148,7 @@ class AgentGroupMember(AgentGroupMemberBase):
     added_at: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # AgentGroupMessage
 class MessageContent(BaseModel):
@@ -173,7 +176,7 @@ class AgentGroupMessage(BaseModel):
     sent_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 ######################## Agent Group Chat end ##########################
 
@@ -196,7 +199,7 @@ class User(UserBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Post
@@ -219,7 +222,7 @@ class Post(PostBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ChatMessage
@@ -238,4 +241,4 @@ class ChatMessage(ChatMessageBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
