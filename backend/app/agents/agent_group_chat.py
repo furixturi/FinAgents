@@ -4,6 +4,7 @@ load_dotenv()
 
 import os
 from typing import List, Optional, Dict, Any, Tuple, Union
+from enum import Enum
 
 from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -188,7 +189,9 @@ class AgentGroupChat:
         self.websocket = websocket
         self.websocket_conn = websocket_conn_manager
 
-        if not dummy and not (group_id or (group_manager_llm and agent_configs and llm_configs)):
+        if not dummy and not (
+            group_id or (group_manager_llm and agent_configs and llm_configs)
+        ):
             raise ValueError(
                 "Either a valid group_id of a group created by the user, or a set of group_manager_llm, agent_configs, and llm_configs must be provided"
             )
@@ -208,6 +211,7 @@ class AgentGroupChat:
         self.autogen_messages = []
         self.autogen_agent_group_chat = None
         self.autogen_agent_group_chat_manager = None
+        self.user_proxy = None
 
     @classmethod
     async def create(
@@ -240,7 +244,8 @@ class AgentGroupChat:
             group_config = DUMMY_GROUP_CONFIG
             agent_configs = DUMMY_AGENT_CONFIGS
             llm_configs = DUMMY_LLM_CONFIGS
-            
+            instance.llm_configs = llm_configs
+
         if group_id:
             instance.group_data = await instance._a_retrieve_agent_group_data(group_id)
             if instance.group_data:
@@ -346,7 +351,12 @@ class AgentGroupChat:
         agent_config = agent_data.to_dict()
 
         # 1. Check if the agent type is valid
-        agent_type = agent_config.pop("agent_type")
+        agent_type = (
+            agent_config["agent_type"].value
+            if isinstance(agent_config["agent_type"], Enum)
+            else agent_config["agent_type"]
+        )
+        
         if agent_type not in agent_constructors:
             raise ValueError(f"Invalid agent type: {agent_type}")
 
@@ -373,10 +383,10 @@ class AgentGroupChat:
         #     },
         # ]
 
-        if "llm_config" in agent_config:
+        if "llm_config" in agent_config and agent_config["llm_config"] is not None:
             if not self.llm_configs:
                 raise ValueError(
-                    "Cannot create AutoGen agent with LLM since no LLM configs are provided"
+                    f"Cannot create AutoGen agent with LLM since the requested llm_config model name ${agent_config["llm_config"]} is not found in the provided llm configs: {self.llm_configs}"
                 )
             llm_config = agent_config["llm_config"]
             if isinstance(llm_config, str):
@@ -386,6 +396,24 @@ class AgentGroupChat:
                     {"model": model_name, **self.llm_configs.get(model_name)}
                     for model_name in llm_config["config_list"]
                 ]
+        
+        attributes_to_filter = [
+            "name",
+            "system_message",
+            "is_termination_msg",
+            "max_consecutive_auto_reply",
+            "human_input_mode",
+            "function_map",
+            "code_execution_config",
+            "llm_config",
+            "default_auto_reply",
+            "description",
+            "chat_messages"
+        ]
+
+        agent_config = {
+            attr: agent_config[attr] for attr in attributes_to_filter if (attr in agent_config and agent_config[attr] is not None)
+        }
 
         # 3. Create the agent and return it
         if agent_type == "UserProxyAgent" and self.user_proxy:
@@ -398,7 +426,7 @@ class AgentGroupChat:
 
         # 4. register a callback hook so that the agent save every message to db before sending it
         autogen_agent.register_hook(
-            "process_message_before_send", self.agent_save_message_and_send_ws
+            "process_message_before_send", self.a_agent_save_message_and_send_ws
         )
 
         return autogen_agent

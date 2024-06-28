@@ -6,7 +6,7 @@ from enum import Enum as PydanticEnum
 ############# Agent Group Chat start #############
 
 # AIAgent
-class AgentTypeEnum(str, PydanticEnum):
+class AgentType(str, PydanticEnum):
     ConversableAgent = "ConversableAgent"
     UserProxyAgent = "UserProxyAgent"
     AssistantAgent = "AssistantAgent"
@@ -15,7 +15,7 @@ class AgentTypeEnum(str, PydanticEnum):
 class AIAgentBase(BaseModel):
     name: str
     user_id: int
-    agent_type: AgentTypeEnum
+    agent_type: AgentType
     system_message: Optional[str] = "You are a helpful AI Assistant."
     is_termination_msg: Optional[str] = None
     max_consecutive_autoreply: Optional[int] = None
@@ -33,7 +33,7 @@ class AIAgentCreate(AIAgentBase):
 
 class AIAgentUpdate(BaseModel):
     name: Optional[str]
-    agent_type: Optional[AgentTypeEnum]
+    agent_type: Optional[AgentType]
     system_message: Optional[str]
     is_termination_msg: Optional[str]
     max_consecutive_autoreply: Optional[int]
