@@ -188,18 +188,14 @@ class AgentGroupChat:
         self.websocket = websocket
         self.websocket_conn = websocket_conn_manager
 
-        if dummy:
-            group_manager_llm = DUMMY_GROUP_MANAGER_LLM
-            group_config = DUMMY_GROUP_CONFIG
-            agent_configs = DUMMY_AGENT_CONFIGS
-            llm_configs = DUMMY_LLM_CONFIGS
-
-        if not (group_id or (group_manager_llm and agent_configs and llm_configs)):
+        if not dummy and not (group_id or (group_manager_llm and agent_configs and llm_configs)):
             raise ValueError(
                 "Either a valid group_id of a group created by the user, or a set of group_manager_llm, agent_configs, and llm_configs must be provided"
             )
 
         self.group_manager_llm = group_manager_llm
+        self.group_config = group_config
+        self.agent_configs = agent_configs
         self.llm_configs = llm_configs
 
         self.group_data: AgentGroup = None
@@ -239,6 +235,12 @@ class AgentGroupChat:
             websocket_conn_manager,
             dummy,
         )
+        if dummy:
+            group_manager_llm = DUMMY_GROUP_MANAGER_LLM
+            group_config = DUMMY_GROUP_CONFIG
+            agent_configs = DUMMY_AGENT_CONFIGS
+            llm_configs = DUMMY_LLM_CONFIGS
+            
         if group_id:
             instance.group_data = await instance._a_retrieve_agent_group_data(group_id)
             if instance.group_data:
