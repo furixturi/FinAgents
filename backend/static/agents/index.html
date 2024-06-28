@@ -1,23 +1,36 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>WebSocket Agent Chat</title>
 </head>
+
 <body>
-    <h1>WebSocket Agent Chat</h1>
-    <h2>Start a chat</h2>
+    <h1>WebSocket Agent Group Chat Test</h1>
     <div>
-        <input type="text" id="userIdInput" placeholder="Your user ID" autocomplete="off"/>
-        <button onclick="connectWebSocket()">Start Chat</button>
+        <label for="user_id">User ID:</label>
+        <input type="text" id="user_id" name="user_id">
     </div>
-    <h2>Send a task message</h2>
     <div>
-        <input type="text" id="messageInput" placeholder="Your message" autocomplete="off"/>
-        <button onclick="sendMessage()">Send</button>
+        <button onclick="createDummyGroup()">Create Dummy Group</button>
+        <div>Dummy group_id: <span id="group_id"></span></div>
+    </div>
+    <div>
+        <label for="group_id">Group ID:</label><br>
+        <input type="text" id="group_id" name="group_id"><br>
+    </div>
+    <div>
+        <button onclick="connect()">Connect</button>
     </div>
     
-    <div id="chat"></div>
+
+    <br>
+    <label for="message">Message:</label><br>
+    <input type="text" id="message" name="message"><br>
+    <button onclick="sendMessage()">Send Message</button>
+    <pre id="messages"></pre>
 
     <script src="script.js"></script>
 </body>
+
 </html>

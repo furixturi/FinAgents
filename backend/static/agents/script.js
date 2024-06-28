@@ -1,32 +1,47 @@
-let ws;
-const userId = document.getElementById("userIdInput").value;
+var socket;
 
-function connectWebSocket() {
-    if(!ws) {
-        console.log(`!ws ${!ws}. Connecting to WebSocket with user ID: ${userId}`);
-        ws = new WebSocket(`ws://localhost:8000//agents-chat/${userId}`);
+async function createDummyGroup() {
+    const user_id = document.getElementById('user_id').value;
+    if(user_id){
+        const response = await fetch(`http://localhost:8000/agents/users/${user_id}/groupchat/create-dummy-group`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_id: user_id }),
+        });
 
-        ws.onmessage = function (event) {
-            console.log('Received message: ', event.data)
-            const messages = document.getElementById('chat');
-            const messageData = JSON.parse(event.data);
-            const message = document.createElement('div');
-            const content = document.createTextNode(`${messageData.agent_type} - ${messageData.name}: ${messageData.message} [Timestamp: ${messageData.sent_at}]`);
-            message.appendChild(content);
-            messages.appendChild(message);
-        };
+        if(!response.ok){
+            console.log(`Failed to create dummy group because of an error: ${response.status} ${response.statusText}`);
+            return;
+        }
+        const data = await response.json();
+        console.log(data);
+        document.getElementById('group_id').textContent = data.group_id;
+    
     }
 }
 
-function sendMessage() {
-    const input = document.getElementById("messageInput");
-    const message = {
-        userId: userId,
-        agent_type: "UserProxyAgent",
-        message: input.value
+function connect() {
+    var user_id = document.getElementById('user_id').value;
+    var group_id = document.getElementById('group_id').value;
+    socket = new WebSocket("ws://localhost:8000/agents/users/" + user_id + "/groupchat/" + group_id);
+
+    socket.onmessage = function (event) {
+        var messages = document.getElementById('messages');
+        messages.textContent += '\n' + event.data;
     };
 
-    console.log('Sending message: ', message);
-    ws.send(JSON.stringify(message));
-    input.value = '';
+    socket.onclose = function (event) {
+        console.log("WebSocket closed: ", event);
+    };
+
+    socket.onerror = function (error) {
+        console.log("WebSocket Error: ", error);
+    };
+}
+
+function sendMessage() {
+    var message = document.getElementById('message').value;
+    socket.send(message);
 }

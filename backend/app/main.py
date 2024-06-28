@@ -6,6 +6,7 @@ from app.websocket.connection_manager import ConnectionManager
 
 from app.api.endpoints.agents.admin import agent as admin_agent, agent_group as admin_agent_group, agent_group_member as admin_agent_group_member, agent_group_message as admin_agent_group_message
 from app.api.endpoints.agents.user import agent as user_agent, agent_group as user_agent_group, agent_group_member as user_agent_group_member, agent_group_message as user_agent_group_message
+from app.api.endpoints.agents.agent_group_chat import agent_group_chat as agent_group_chat
 
 # from app.websocket.endpoint import websocket_endpoint
 from app.db import init_db, engine
@@ -39,7 +40,7 @@ async def read_root():
 # Test basic routes
 app.include_router(user.router, prefix="/users", tags=["users"])
 app.include_router(post.router, prefix="/posts", tags=["posts"])
-app.include_router(chat.router, prefix="/chat", tags=["chat"]) # websocket and RESTful
+app.include_router(chat.router, prefix="/chat", tags=["chat"]) # websocket chat and RESTful messages
 
 # Agent API routes
 ## admin routes
@@ -55,7 +56,8 @@ app.include_router(user_agent_group_member.router, prefix="/agents/users/{user_i
 app.include_router(user_agent_group_message.router, prefix="/agents/users/{user_id}/agent_groups/{group_id}/messages", tags=["User Agent Group Messages"])
 
 
-
+# websocket group chat
+app.include_router(agent_group_chat.router, prefix="/agents/users/{user_id}/groupchat", tags=["Agent Group Chat"])
 
 
 

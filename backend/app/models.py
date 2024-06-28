@@ -34,7 +34,7 @@ class AIAgent(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     agent_type = Column(Enum(AgentType), nullable=False)
     system_message = Column(String, default="You are a helpful AI Assistant.")
-    is_termination_msg = Column(Text, nullable=False)
+    is_termination_msg = Column(Text, nullable=True)
     max_consecutive_autoreply = Column(Integer, nullable=True)
     human_input_mode = Column(Enum("ALWAYS", "NEVER", "TERMINATE"), default="TERMINATE")
     function_map = Column(JSON, nullable=True)

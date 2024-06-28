@@ -21,7 +21,7 @@ class AIAgentBase(BaseModel):
     max_consecutive_autoreply: Optional[int] = None
     human_input_mode: Optional[str] = "TERMINATE"
     function_map: Optional[Dict[str, str]] = None
-    code_execution_config: Optional[Dict] = None
+    code_execution_config: Optional[Union[Dict, bool]] = None
     llm_config: Optional[Dict] = None
     default_auto_reply: Optional[str] = ""
     description: Optional[str] = None
@@ -39,7 +39,7 @@ class AIAgentUpdate(BaseModel):
     max_consecutive_autoreply: Optional[int]
     human_input_mode: Optional[str]
     function_map: Optional[Dict[str, str]]
-    code_execution_config: Optional[Dict[str, str]]
+    code_execution_config: Optional[Union[Dict, bool]] 
     llm_config: Optional[Dict[str, str]]
     default_auto_reply: Optional[str]
     description: Optional[str]
@@ -47,7 +47,7 @@ class AIAgentUpdate(BaseModel):
 
 class AIAgent(AIAgentBase):
     id: int
-    created_at: Optional[str]
+    created_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -145,7 +145,7 @@ class AgentGroupMemberCreate(AgentGroupMemberBase):
 
 
 class AgentGroupMember(AgentGroupMemberBase):
-    added_at: Optional[str]
+    added_at: Optional[datetime]
 
     class Config:
         from_attributes = True
