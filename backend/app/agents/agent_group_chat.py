@@ -38,8 +38,17 @@ from app.schemas import (
 )
 from app.models import AIAgent, AgentGroup, AgentGroupMember, AgentGroupMessage
 
+from app.agents.agent_group_connection_manager import AgentGroupConnectionManager
 
-default_llm_configs = {
+DUMMY_GROUP_CONFIG = {
+    "name": "Dummy Group",
+    "max_round": 10,
+    "speaker_selection_method": "round_robin",
+}
+
+DUMMY_GROUP_MANAGER_LLM = "gpt_4_turbo"
+
+DUMMY_LLM_CONFIGS = {
     "gpt_4o": {
         "model": os.environ.get("GPT_4O_MODEL"),
         "api_type": "azure",
@@ -63,7 +72,7 @@ default_llm_configs = {
     },
 }
 
-default_agent_configs = [
+DUMMY_AGENT_CONFIGS = [
     {
         "name": "Admin",
         "system_message": "A human admin. Give the task, and send instructions to writer to refine the blog post.",
@@ -111,13 +120,13 @@ def create_default_agents() -> List[ConversableAgent]:
         system_message="""Planner. Given a task, please determine what information is needed to complete the task.
         Please note that the information will all be retrieved using Python code. Please only suggest information that can be retrieved using Python code.
         """,
-        llm_config={"config_list": [default_agent_configs["config_gpt_4_turbo"]]},
+        llm_config={"config_list": [DUMMY_LLM_CONFIGS["config_gpt_4_turbo"]]},
     )
 
     engineer = AssistantAgent(
         name="Engineer",
         llm_config={
-            "config_list": [default_agent_configs["config_gpt_4_turbo"]],
+            "config_list": [DUMMY_LLM_CONFIGS["config_gpt_4_turbo"]],
             "cache_seed": None,
         },
         system_message="""Engineer. You write python/bash to retrieve relevant information. Wrap the code in a code block that specifies the script type. The user can't modify your code. So do not suggest incomplete code which requires others to modify. Don't use a code block if it's not intended to be executed by the executor. 
@@ -132,7 +141,7 @@ def create_default_agents() -> List[ConversableAgent]:
         AssistantAgent(
             name="Writer",
             llm_config={
-                "config_list": [default_agent_configs["config_gpt_4_turbo"]],
+                "config_list": [DUMMY_LLM_CONFIGS["config_gpt_4_turbo"]],
                 "cache_seed": None,
             },
             system_message="""Writer. Please write finance report and documentation in markdown format (with relevant titles) and put the content in pseudo ```md``` code block. You will write it for a task based on previous chat history. Don't write any code. You can get code from Engineer and put them in  markdown style code blocks in your report if necessary.""",
@@ -165,49 +174,109 @@ class AgentGroupChat:
         self,
         db: AsyncSession,
         user_id: int,
-        websocket: WebSocket = None,
         group_id: int = None,
+        group_manager_llm: str = "",
+        agent_configs: List[dict] = None,
+        llm_configs: dict = None,
         group_config: dict = {},
-        group_manager_llm: str = "gpt_4_turbo",
-        agent_configs: List[dict] = default_agent_configs,
-        llm_configs: dict = default_llm_configs,
+        websocket: WebSocket = None,
+        websocket_conn_manager: AgentGroupConnectionManager = None,
+        dummy: bool = False,
     ):
         self.db = db
         self.user_id = user_id
         self.websocket = websocket
+        self.websocket_conn = websocket_conn_manager
+
+        if dummy:
+            group_manager_llm = DUMMY_GROUP_MANAGER_LLM
+            group_config = DUMMY_GROUP_CONFIG
+            agent_configs = DUMMY_AGENT_CONFIGS
+            llm_configs = DUMMY_LLM_CONFIGS
+
+        if not (group_id or (group_manager_llm and agent_configs and llm_configs)):
+            raise ValueError(
+                "Either a valid group_id of a group created by the user, or a set of group_manager_llm, agent_configs, and llm_configs must be provided"
+            )
+
         self.group_manager_llm = group_manager_llm
         self.llm_configs = llm_configs
 
-        self.agent_name_to_id: Dict[str, int] = {}
         self.group_data: AgentGroup = None
         self.agents_data: List[AIAgent] = []
         self.messages_data: List[AgentGroupMessage] = []
+
+        self.agent_name_to_id: Dict[str, int] = {}
+
+        self.autogen_agents = []
+        self.autogen_messages = []
+        self.autogen_agent_group_chat = None
+        self.autogen_agent_group_chat_manager = None
+
+    @classmethod
+    async def create(
+        cls,
+        db: AsyncSession,
+        user_id: int,
+        group_id: int = None,
+        group_manager_llm: str = "",
+        agent_configs: List[dict] = None,
+        llm_configs: dict = None,
+        group_config: dict = {},
+        websocket: WebSocket = None,
+        websocket_conn_manager: AgentGroupConnectionManager = None,
+        dummy: bool = False,
+    ):
+        instance = cls(
+            db,
+            user_id,
+            group_id,
+            group_manager_llm,
+            agent_configs,
+            llm_configs,
+            group_config,
+            websocket,
+            websocket_conn_manager,
+            dummy,
+        )
         if group_id:
-            self.group_data = self.retrieve_agent_group_data(group_id)
-            if self.group_data:
-                self.agents_data = self.retrieve_group_agents_data(group_id)
-                self.messages_data = self.retrieve_group_messages_data(group_id)
+            instance.group_data = await instance._a_retrieve_agent_group_data(group_id)
+            if instance.group_data:
+                instance.agents_data = await instance._a_retrieve_group_agents_data(
+                    group_id
+                )
+                instance.messages_data = await instance._a_retrieve_group_messages_data(
+                    group_id
+                )
             else:
                 raise ValueError(f"Agent group with id {group_id} not found")
         else:
-            self.group_data = self.create_and_store_agent_group_data(group_config)
-            self.agents_data = self.create_and_store_group_agents_data(
-                agent_configs, self.group_data.id
+            instance.group_data = await instance._a_create_and_store_agent_group_data(
+                group_config
+            )
+            instance.agents_data = await instance._a_create_and_store_group_agents_data(
+                agent_configs, instance.group_data.id
             )
 
-        self.autogen_agents = [
-            self.create_autogen_agent(agent_data) for agent_data in self.agents_data
+        instance.autogen_agents = [
+            instance._create_autogen_agent(agent_data)
+            for agent_data in instance.agents_data
         ]
-        self.autogen_messages = [
-            self.create_autogen_message(message_data)
-            for message_data in self.messages_data
+        instance.autogen_messages = [
+            instance._create_autogen_message(message_data)
+            for message_data in instance.messages_data
         ]
-        self.autogen_agent_group_chat, self.autogen_agent_group_chat_manager = (
-            self.initialize_agent_group_chat()
+        instance.autogen_agent_group_chat, instance.autogen_agent_group_chat_manager = (
+            instance._initialize_agent_group_chat()
         )
+        return instance
+
+    @property
+    def group_id(self):
+        return self.group_id
 
     # CRUD to create and store new data of agent, agent_group, agent_group_messages to db
-    async def create_and_store_agent_group_data(self, group_config) -> AgentGroup:
+    async def _a_create_and_store_agent_group_data(self, group_config) -> AgentGroup:
         return await user_create_agent_group(
             db=self.db,
             agent_group_create=AgentGroupCreate(
@@ -215,7 +284,7 @@ class AgentGroupChat:
             ),
         )
 
-    async def create_and_store_group_agents_data(
+    async def _a_create_and_store_group_agents_data(
         self, agent_configs: List[dict], group_id
     ) -> List[AIAgent]:
         agents_data = []
@@ -235,13 +304,13 @@ class AgentGroupChat:
         return agents_data
 
     # CRUD to retireve data of agent, agent_group, agent_group_messages from db with given group_id
-    async def retrieve_agent_group_data(self, group_id: int):
+    async def _a_retrieve_agent_group_data(self, group_id: int):
         group_data = await user_get_agent_group(self.db, self.user_id, group_id)
         if group_data:
             return group_data
         return None
 
-    async def retrieve_group_agents_data(self, group_id: int):
+    async def _a_retrieve_group_agents_data(self, group_id: int):
         group_members = await user_get_agent_group_members(
             self.db, self.user_id, group_id
         )
@@ -252,14 +321,14 @@ class AgentGroupChat:
                 agents_data.append(agent_data)
         return agents_data
 
-    async def retrieve_group_messages_data(self, group_id: int):
+    async def _a_retrieve_group_messages_data(self, group_id: int):
         messages_data = await user_get_agent_group_messages(
             self.db, self.user_id, group_id
         )
         return messages_data
 
     # Use the data to create autogen agents, messages, groupchat, groupchat_manager
-    def create_autogen_agent(self, agent_data: AIAgent):
+    def _create_autogen_agent(self, agent_data: AIAgent):
         agent_name = agent_data.name
         if agent_name in self.agent_name_to_id:
             raise ValueError(f"Agent name {agent_name} is not unique")
@@ -327,12 +396,12 @@ class AgentGroupChat:
 
         # 4. register a callback hook so that the agent save every message to db before sending it
         autogen_agent.register_hook(
-            "process_message_before_send", self.agent_save_message_before_send
+            "process_message_before_send", self.agent_save_message_and_send_ws
         )
 
         return autogen_agent
 
-    async def agent_save_message_before_send(
+    async def a_agent_save_message_and_send_ws(
         self, sender: Agent, message: Union[Dict, str], recipient: Agent, silent=False
     ) -> Union[Dict, str]:
         """
@@ -377,9 +446,12 @@ class AgentGroupChat:
 
         _ = await user_create_agent_group_message(self.db, message_create)
 
+        if self.websocket_conn and self.websocket:
+            self.websocket_conn.send_message_to_client(message_dict, self.websocket)
+
         return message
 
-    def create_autogen_message(self, message_data: AgentGroupMessage):
+    def _create_autogen_message(self, message_data: AgentGroupMessage):
         # Example message_data.message
         # {'content': 'Today is 2024-06-22. Write a blogpost about the stock price performance of Nvidia in the past month.',
         #   'role': 'user',
@@ -389,7 +461,7 @@ class AgentGroupChat:
         #   'name': 'Planner'},
         return message_data.message
 
-    def initialize_agent_group_chat(self):
+    def _initialize_agent_group_chat(self):
         agent_group_chat = GroupChat(
             name=self.group_data.name,
             agents=self.autogen_agents,
